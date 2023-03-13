@@ -1,0 +1,25 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#    https://39.105.182.200:24688/database
+#    jdbc:mysql://localhost:3306/reggie
+    url: jdbc:mysql://39.105.182.200:3306/reggie
+    username: reggie
+    password: 2XySTGL7HnzEHpHn
+    type: com.alibaba.druid.pool.DruidDataSource
+logging:
+  level:
+    com.rosevvi: debug
+
+reggie:
+  path: /usr/images
+server:
+  port: 8848
+
+
