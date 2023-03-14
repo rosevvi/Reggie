@@ -13,6 +13,11 @@ spring:
     username: reggie
     password: 2XySTGL7HnzEHpHn
     type: com.alibaba.druid.pool.DruidDataSource
+  redis:
+    port: 6379
+    host: 39.105.182.200
+    password: rose
+    database: 0
 logging:
   level:
     com.rosevvi: debug
@@ -21,5 +26,6 @@ reggie:
   path: /usr/images
 server:
   port: 8848
+
 
 
