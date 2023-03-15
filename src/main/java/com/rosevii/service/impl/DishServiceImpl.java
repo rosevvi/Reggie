@@ -95,7 +95,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         }).collect(Collectors.toList());
 
         //添加当前提交过来的数据--dish_flavor表的insert操作
-        dishFlavorService.saveBatch(flavors);
+        dishFlavorService.updateBatchById(flavors);
     }
 
     /**

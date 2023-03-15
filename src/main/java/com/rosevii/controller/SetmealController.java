@@ -5,15 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rosevii.common.R;
 import com.rosevii.domain.Category;
 import com.rosevii.domain.Setmeal;
-import com.rosevii.domain.SetmealDish;
 import com.rosevii.dto.SetmealDto;
-import com.rosevii.exception.CustomerException;
 import com.rosevii.service.CategoryService;
-import com.rosevii.service.SetmealDishService;
 import com.rosevii.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,9 +34,6 @@ public class SetmealController {
     private SetmealService setmealService;
 
     @Autowired
-    private SetmealDishService setmealDishService;
-
-    @Autowired
     private CategoryService categoryService;
 
     /**
@@ -45,6 +42,10 @@ public class SetmealController {
      * @return
      */
     @PostMapping
+    @Caching(evict = {
+            @CacheEvict(value = "setmeal",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> saveWithDish(@RequestBody SetmealDto setmealDto){
         System.out.println(setmealDto);
         setmealService.saveWithDish(setmealDto);
@@ -59,6 +60,7 @@ public class SetmealController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "setmeal",key = "'setmeal_page'+#page+':'+#pageSize+':'+#name")
     public R<Page> page(Integer page,Integer pageSize,String name){
         //分页构造器
         Page<Setmeal> pageInfo = new Page<>(page,pageSize);
@@ -68,7 +70,7 @@ public class SetmealController {
         queryWrapper.like(name!=null,Setmeal::getName,name);
         queryWrapper.orderByAsc(Setmeal::getUpdateTime);
 
-        setmealService.page(pageInfo);
+        setmealService.page(pageInfo,queryWrapper);
         //到这里虽然page里面有数据了但是前端显示会有问题 因为另一个套餐分类不在这个表没有查出来 所以要利用setmealDto来进行简单处理
         //进行对象的复制
         Page<SetmealDto> setmealDtoPage = new Page<>();
@@ -100,6 +102,10 @@ public class SetmealController {
      * @return
      */
     @DeleteMapping
+    @Caching(evict = {
+            @CacheEvict(value = "setmeal",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> delete(@RequestParam List<Long> ids){
         setmealService.removeWithDish(ids);
         return R.success("删除成功");
@@ -111,8 +117,8 @@ public class SetmealController {
      * @return
      */
     @GetMapping("{id}")
+    @Cacheable(value = "setmeal",key = "#id",unless = "#id == null")
     public R<SetmealDto> update(@PathVariable Long id){
-
         SetmealDto setmealDto = setmealService.update(id);
         return R.success(setmealDto);
     }
@@ -124,6 +130,10 @@ public class SetmealController {
      * @return
      */
     @PutMapping
+    @Caching(evict = {
+            @CacheEvict(value = "setmeal",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> update(@RequestBody SetmealDto setmealDto){
         //因为这个修改需要操作两个表所以我们自己写一个新的方法
         setmealService.update(setmealDto);
@@ -137,6 +147,10 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/{status}")
+    @Caching(evict = {
+            @CacheEvict(value = "setmeal",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> status(@PathVariable Integer status,@RequestParam List<Long> ids){
         //套餐的停起售操作一张表就可以
         LambdaQueryWrapper<Setmeal> queryWrapper=new LambdaQueryWrapper<>();

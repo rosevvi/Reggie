@@ -11,6 +11,9 @@ import com.rosevii.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,12 +36,17 @@ public class DishController {
     @Autowired
     private CategoryService categoryService;
 
+
     /**
      * 新增菜品功能
      * @param dishDto
      * @return
      */
     @PostMapping
+    @Caching(evict = {
+            @CacheEvict(value = "dish",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> save(@RequestBody DishDto dishDto){
         dishService.saveWithFlavor(dishDto);
         return R.success(" 新增菜品成功");
@@ -52,6 +60,7 @@ public class DishController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "dish",key = "'dish_page'+#page+':'+#pageSize+':'+#name")
     public R<Page>  page(Integer page,Integer pageSize,String name){
         //构造分页构造器
         Page<Dish> pageInfo = new Page(page,pageSize);
@@ -91,7 +100,8 @@ public class DishController {
      * @return
      */
     @GetMapping("/{id}")
-     public R<DishDto> get(@PathVariable("id") Long id){
+    @Cacheable(value = "dish",key = "#id",unless = "#id == null")
+    public R<DishDto> get(@PathVariable("id") Long id){
         DishDto dishDto = dishService.getByIdWithFlavor(id);
         return R.success(dishDto);
     }
@@ -102,6 +112,10 @@ public class DishController {
      * @return
      */
     @PutMapping
+    @Caching(evict = {
+            @CacheEvict(value = "dish",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> update(@RequestBody DishDto dishDto){
         dishService.updateWithFlavor(dishDto);
         return R.success("修改菜品成功");
@@ -114,8 +128,8 @@ public class DishController {
      * @return
      */
     @GetMapping("/list")
+    @Cacheable(value = "dish",key = "'dish_list'+#dish.categoryId+':'+#dish.id",unless = "#dish.id == null")
     public R<List<Dish>> list(Dish dish){
-
         //构造查询条件
         LambdaQueryWrapper<Dish> queryWrapper=new LambdaQueryWrapper<>();
         queryWrapper.eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId());
@@ -133,6 +147,10 @@ public class DishController {
      * @return
      */
     @DeleteMapping
+    @Caching(evict = {
+            @CacheEvict(value = "dish",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> stop(@RequestParam List<Long> ids){
         //要删除两张表内容所以我们自己创建了一个方法
         dishService.deleteWithFlavor(ids);
@@ -146,6 +164,10 @@ public class DishController {
      * @return
      */
     @PostMapping("/status/{status}")
+    @Caching(evict = {
+            @CacheEvict(value = "dish",allEntries = true),
+            @CacheEvict(value = "category",allEntries = true)
+    })
     public R<String> status(@PathVariable Integer status,@RequestParam List<Long> ids){
         //停起售状态只需要操作一个表 dish
         LambdaQueryWrapper<Dish> dishLambdaQueryWrapper=new LambdaQueryWrapper<>();
@@ -159,4 +181,5 @@ public class DishController {
         dishService.updateBatchById(list);
         return R.success("修改成功");
     }
+
 }

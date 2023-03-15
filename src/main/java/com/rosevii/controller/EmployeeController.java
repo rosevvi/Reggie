@@ -8,6 +8,8 @@ import com.rosevii.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +29,7 @@ public class EmployeeController {
 
     @Autowired
     private EmployeeService employeeService;
+
 
     /**
      * 员工登录
@@ -83,6 +86,7 @@ public class EmployeeController {
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "employee",allEntries = true)
     public R<String> save(HttpServletRequest request,@RequestBody Employee employee){
         log.info("新增员工 员工信息：{}",employee.toString());
         //1、统一设置默认密码123456 需要进行MD5加密
@@ -106,17 +110,21 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "employee",key = "'employee_page'+#page+':'+#pageSize+':'+#name")
     public R<Page> page(Integer page,Integer pageSize,String name){
+        System.out.println(name);
         //构造分页构造器
-        Page pageInfo =new Page(page,pageSize);
+        Page pageinfo =new Page(page,pageSize);
         //构造条件构造器
         LambdaQueryWrapper<Employee> queryWrapper=new LambdaQueryWrapper<>();
         queryWrapper.like(StringUtils.isNotEmpty(name),Employee::getName,name);
         queryWrapper.orderByDesc(Employee::getUpdateTime);
         //执行查询
-        employeeService.page(pageInfo,queryWrapper);
+        employeeService.page(pageinfo,queryWrapper);
+
+
         log.info("page="+page+",pagesize="+pageSize+",name="+name);
-        return R.success(pageInfo);
+        return R.success(pageinfo);
     }
 
     /**
@@ -125,6 +133,7 @@ public class EmployeeController {
      * @return
      */
     @PutMapping
+    @CacheEvict(value = "employee",allEntries = true)
     public R<String> update(HttpServletRequest request,@RequestBody Employee employee){
         employee.setUpdateTime(LocalDateTime.now());
         Long empId = (Long) request.getSession().getAttribute("employee");
@@ -139,6 +148,7 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("{id}")
+    @Cacheable(value = "employee",key = "#id",unless = "#id == null")
     public R<Employee> updateEmployee(@PathVariable("id") Long id){
         Employee employee = employeeService.getById(id);
         if (employee!= null){
